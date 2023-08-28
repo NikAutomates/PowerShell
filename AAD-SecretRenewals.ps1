@@ -22,9 +22,9 @@
 
 Connect-MgGraph -Identity -NoWelcome | Out-Null
 
-$clientid = "bd815829-a3fb-425c-add5-37e2008b8855"
+$clientid = "Private"
 $Secret = Get-AutomationVariable -Name 'ClientSecret-Graph-Automation'
-$TenantName = 'apex4health.com'
+$TenantName = 'SomethingDomain.com'
 
 $Body = @{
     Grant_Type    = "client_credentials"
