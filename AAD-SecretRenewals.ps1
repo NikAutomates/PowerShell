@@ -239,7 +239,7 @@ $TrimmedOldSecret = [System.Text.RegularExpressions.Regex]::Replace($SecretName,
      $ExpiringSecrets | 
      Where-Object {$_.AppOwner -ne $null} | ForEach-Object { 
      $AppOwnerPrimarySMTP = $_.AppOwner
-     $MailboxSender       = "OneID@apex4health.com"
+     $MailboxSender       = "Email.yourDomain.com"
      $Subject             =  "Alert: One or More App Registration Secrets are Expiring" 
  
     
