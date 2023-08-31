@@ -24,7 +24,7 @@ Connect-MgGraph -Identity -NoWelcome | Out-Null
 
 $clientid = "Private"
 $Secret = Get-AutomationVariable -Name 'ClientSecret-Graph-Automation'
-$TenantName = 'SomethingDomain.com'
+$TenantName = 'Domain.com'
 
 $Body = @{
     Grant_Type    = "client_credentials"
@@ -173,7 +173,7 @@ $TrimmedOldSecret = [System.Text.RegularExpressions.Regex]::Replace($SecretName,
 }
 
     Try {
-      Connect-AzAccount -Identity -Subscription 'AH-Prod' | Out-Null
+      Connect-AzAccount -Identity -Subscription 'MyCompany-Prod' | Out-Null
       $RenewedSecretsResultsArray | ForEach-Object {
       $KeyVaultSecret = $_
       
@@ -183,7 +183,7 @@ $TrimmedOldSecret = [System.Text.RegularExpressions.Regex]::Replace($SecretName,
       $EncryptedSecret = ConvertTo-SecureString -String $KeyVaultSecret.SecretText -AsPlainText -Force
     
       $KeyVaultArgs = @{
-          VaultName   = 'AH-SecretRenewal'
+          VaultName   = 'MyCompany-SecretRenewal'
           Name        = $ConstructedSecretName
           SecretValue = $EncryptedSecret
       }
@@ -239,7 +239,7 @@ $TrimmedOldSecret = [System.Text.RegularExpressions.Regex]::Replace($SecretName,
      $ExpiringSecrets | 
      Where-Object {$_.AppOwner -ne $null} | ForEach-Object { 
      $AppOwnerPrimarySMTP = $_.AppOwner
-     $MailboxSender       = "Email.yourDomain.com"
+     $MailboxSender       = "Email.Domain.com"
      $Subject             =  "Alert: One or More App Registration Secrets are Expiring" 
  
     
