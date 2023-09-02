@@ -1,11 +1,13 @@
 <#
 .SYNOPSIS
     Secret-Renewals.ps1
-    Automatically Renew oAuth & API App Reg Secrets that will expire soon
+    Automatically Renew App Reg Client Secrets that will expire soon
+    Client Secrets will be placed in a Keyvault and Owners will be notified
 
 .DESCRIPTION
     This Script is intended to be used in an Azure Automation Runbook.
     Ensure to use a PowerShell 7.2 Runbook and Encrypt the Client Secret
+    
 
     A Combination of REST API and the Graph SDK is used. 
     This is to ensure the original App Reg will not break or hault REST API
@@ -22,9 +24,10 @@
 
 Connect-MgGraph -Identity -NoWelcome | Out-Null
 
-$clientid = "Private"
+#Variables to declare to App Registration
+$clientid = "bd815829-a3fb-425c-add5-37e2008b8855"
 $Secret = Get-AutomationVariable -Name 'ClientSecret-Graph-Automation'
-$TenantName = 'Domain.com'
+$TenantName = 'apex4health.com' #Change This
 
 $Body = @{
     Grant_Type    = "client_credentials"
@@ -78,7 +81,7 @@ $Time     = Get-Date -Format hh:mm
             SecretExpiryDate = $SecretExpiryDate
             SecretKeyID      = $AppReg.PasswordCredentials.KeyID
             AppID            = $AppReg.ID
-            AppOwner        = $AppRegOwnerSMTP.mail
+            AppOwner         = $AppRegOwnerSMTP.mail
         }
        [void]$Results.Add($CustomObject)
       }
@@ -173,7 +176,7 @@ $TrimmedOldSecret = [System.Text.RegularExpressions.Regex]::Replace($SecretName,
 }
 
     Try {
-      Connect-AzAccount -Identity -Subscription 'MyCompany-Prod' | Out-Null
+      Connect-AzAccount -Identity -Subscription 'AH-Prod' | Out-Null
       $RenewedSecretsResultsArray | ForEach-Object {
       $KeyVaultSecret = $_
       
@@ -183,7 +186,7 @@ $TrimmedOldSecret = [System.Text.RegularExpressions.Regex]::Replace($SecretName,
       $EncryptedSecret = ConvertTo-SecureString -String $KeyVaultSecret.SecretText -AsPlainText -Force
     
       $KeyVaultArgs = @{
-          VaultName   = 'MyCompany-SecretRenewal'
+          VaultName   = 'AH-SecretRenewal'
           Name        = $ConstructedSecretName
           SecretValue = $EncryptedSecret
       }
@@ -239,7 +242,7 @@ $TrimmedOldSecret = [System.Text.RegularExpressions.Regex]::Replace($SecretName,
      $ExpiringSecrets | 
      Where-Object {$_.AppOwner -ne $null} | ForEach-Object { 
      $AppOwnerPrimarySMTP = $_.AppOwner
-     $MailboxSender       = "Email.Domain.com"
+     $MailboxSender       = "OneID@apex4health.com"
      $Subject             =  "Alert: One or More App Registration Secrets are Expiring" 
  
     
