@@ -1,13 +1,12 @@
 <#
 .SYNOPSIS
     Secret-Renewals.ps1
-    Automatically Renew App Reg Client Secrets that will expire soon
-    Client Secrets will be placed in a Keyvault and Owners will be notified
+    Automatically Renew App Registration Client Secrets that will expire soon
+    Renewed Secrets will automatically be Ingested into Keyvault & Versioned
 
 .DESCRIPTION
     This Script is intended to be used in an Azure Automation Runbook.
     Ensure to use a PowerShell 7.2 Runbook and Encrypt the Client Secret
-    
 
     A Combination of REST API and the Graph SDK is used. 
     This is to ensure the original App Reg will not break or hault REST API
@@ -25,9 +24,9 @@
 Connect-MgGraph -Identity -NoWelcome | Out-Null
 
 #Variables to declare to App Registration
-$clientid = "bd815829-a3fb-425c-add5-37e2008b8855"
+$clientid = "Private"
 $Secret = Get-AutomationVariable -Name 'ClientSecret-Graph-Automation'
-$TenantName = 'apex4health.com' #Change This
+$TenantName = 'MyDomain@Domain.com' #Change This
 
 $Body = @{
     Grant_Type    = "client_credentials"
@@ -176,7 +175,7 @@ $TrimmedOldSecret = [System.Text.RegularExpressions.Regex]::Replace($SecretName,
 }
 
     Try {
-      Connect-AzAccount -Identity -Subscription 'AH-Prod' | Out-Null
+      Connect-AzAccount -Identity -Subscription 'SubName-Prod' | Out-Null #Change Subscription Name
       $RenewedSecretsResultsArray | ForEach-Object {
       $KeyVaultSecret = $_
       
@@ -186,7 +185,7 @@ $TrimmedOldSecret = [System.Text.RegularExpressions.Regex]::Replace($SecretName,
       $EncryptedSecret = ConvertTo-SecureString -String $KeyVaultSecret.SecretText -AsPlainText -Force
     
       $KeyVaultArgs = @{
-          VaultName   = 'AH-SecretRenewal'
+          VaultName   = 'KvName-SecretRenewal' #Change KeyVault Name
           Name        = $ConstructedSecretName
           SecretValue = $EncryptedSecret
       }
@@ -219,7 +218,7 @@ $TrimmedOldSecret = [System.Text.RegularExpressions.Regex]::Replace($SecretName,
 
            $TeamMessageBody = ConvertTo-Json $JsonBody -Depth 100
            $WebhookArgs = @{
-             "URI"         = Get-AutomationVariable -Name 'Teams-WebHook-AD'
+             "URI"         = Get-AutomationVariable -Name 'Teams-WebHook-AD' #Change this
              "Method"      = 'POST'
              "Body"        = $TeamMessageBody
              "ContentType" = 'application/json'
@@ -242,7 +241,7 @@ $TrimmedOldSecret = [System.Text.RegularExpressions.Regex]::Replace($SecretName,
      $ExpiringSecrets | 
      Where-Object {$_.AppOwner -ne $null} | ForEach-Object { 
      $AppOwnerPrimarySMTP = $_.AppOwner
-     $MailboxSender       = "OneID@apex4health.com"
+     $MailboxSender       = "SomeEmail@Domain.com"
      $Subject             =  "Alert: One or More App Registration Secrets are Expiring" 
  
     
