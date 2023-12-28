@@ -1,6 +1,6 @@
 <#
 .LINK
-https://www.powershellgallery.com/packages/AzureSecretMgmt/
+https://www.powershellgallery.com/packages/AzureSecrets
 
 .SYNOPSIS
     Secret-Renewals.ps1
@@ -254,5 +254,5 @@ $RenewSecretParams = @{
 
   #Send-GraphEmail Function Code
   #Get-GraphAccessToken Function Code
-  https://www.powershellgallery.com/packages/AzureSecretMgmt
+  https://www.powershellgallery.com/packages/AzureSecrets
 
