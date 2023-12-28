@@ -9,10 +9,10 @@
 @{  
 
 # Script module or binary module file associated with this manifest.
-RootModule = 'AzureSecretmgmt.psm1'
+RootModule = 'AzureSecrets.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.0.17'
+ModuleVersion = '0.0.28'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -69,7 +69,7 @@ RequiredModules = @("Az.Accounts", "Microsoft.Graph.Applications", "Az.Keyvault"
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = @("Get-GraphAccessToken", "Send-GraphEmail", "Renew-ClientSecrets", "Get-KeyVaultSecret", "Set-DefaultKeyVault")
+FunctionsToExport = @("Get-GraphAccessToken", "Send-GraphEmail", "Renew-ClientSecrets", "Get-KeyVaultSecret", "Set-DefaultKeyVault", "Set-DefaultAzureSubscription", "Invoke-GraphAPIRequest")
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()
