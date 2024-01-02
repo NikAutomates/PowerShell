@@ -1,3 +1,20 @@
+ <#
+.AUTHOR
+    Nik Chikersal
+.SYNOPSIS
+    This function is used to send emails using the Graph REST API instead of using the Send-MailMessage Cmdlet
+.EXAMPLE
+    Send-GraphEmail -MailboxSender Someone@Domain.com -MailboxRecipient Someone2@Domain.com -Subject "Test Email" -EmailBody "This is a test email"
+    This example shows how to send an email using the Graph REST API
+
+    Send-GraphEmail -MailboxSender Someone@Domain.com -MailboxRecipient Someone2@Domain.com -Subject "Test Email" -EmailBody "This is a test email" -UseMSI
+    This example shows how to send an email using the Graph REST API using MSI
+
+.NOTES
+Ensure the proper Graph Permissions are grant to the Runbook or User sending the email
+#>
+
+
 Function Send-GraphEmail {
   [CmdletBinding()]
   param (
@@ -66,7 +83,7 @@ $EmailSendArgs = @{
   try {
   Invoke-RestMethod @EmailSendArgs
   }
-  Catch {
+  catch {
     Write-Output "Please ensure the Runbook or User has the correct graph permissions to Send from $($MailboxSender)"
    }
 } 

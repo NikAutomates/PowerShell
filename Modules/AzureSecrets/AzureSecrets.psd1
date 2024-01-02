@@ -12,7 +12,7 @@
     RootModule = 'AzureSecrets.psm1'
     
     # Version number of this module.
-    ModuleVersion = '0.0.77'
+    ModuleVersion = '0.1.35'
     
     # Supported PSEditions
     # CompatiblePSEditions = @()
@@ -69,7 +69,7 @@
     # NestedModules = @()
     
     # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-    FunctionsToExport = @("Get-GraphAccessToken", "Send-GraphEmail", "Renew-ClientSecrets", "Get-KeyVaultSecret", "Set-DefaultKeyVault", "Set-DefaultAzureSubscription", "Invoke-GraphAPIRequest")
+    FunctionsToExport = @("Get-GraphAccessToken", "Send-GraphEmail", "Update-ClientSecrets", "Get-KeyVaultSecret", "Set-DefaultKeyVault", "Set-DefaultAzureSubscription", "Invoke-GraphAPIRequest", "Set-KeyVaultSecret", "Connect-Azure")
     
     # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
     CmdletsToExport = @()

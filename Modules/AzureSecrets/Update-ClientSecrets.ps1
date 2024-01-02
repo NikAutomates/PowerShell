@@ -1,4 +1,18 @@
-function Renew-ClientSecrets {
+ <#
+.AUTHOR
+    Nik Chikersal
+.SYNOPSIS
+    This function is used to Renew Secrets for Azure App Registrations
+.EXAMPLE
+    Update-ClientSecrets -MailboxSender Someone@Domain.com -TeamsWebHookURL https://outlook.office.com/webhook/12345
+    This example shows how to Renew Client secrets for Azure App Registrations and send a Teams Message if a failure occurs
+.NOTES
+Ensure this Script is being run in an Azure Automation Account with PWSH 7.2+, using an MSI with the proper RBAC Permissions.
+
+#>
+
+
+function Update-ClientSecrets {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
@@ -12,10 +26,16 @@ function Renew-ClientSecrets {
         [string]$TeamsWebHookURL
     )
 
-Connect-AzAccount -Identity | Out-Null
+try {
+    Connect-AzAccount -Identity | Out-Null 
+}
+catch {
+    Write-Warning $Global:Error.Exception.Message[0]
+}
 
-If ($env:Username -or $env:USER -ne "ContainUser") {
+if ($env:Username -or $env:USER -ne "ContainerUser") {
     Write-Warning "This Script must be run in an Azure Automation Account (Run on Azure)"
+    Start-Sleep -Seconds 10
     Exit 1
 }
 
@@ -84,11 +104,11 @@ $Time     = Get-Date -Format hh:mm
         $ExpiringSecrets.Add($Object)
       }
       
-      If ( -not [string]::IsNullOrEmpty($ExpiringSecrets)) {
+      if ( -not [string]::IsNullOrEmpty($ExpiringSecrets)) {
         Write-Output "The following Secrets are expiring soon:"
         $ExpiringSecrets | Format-Table -AutoSize
        }
-        Else { 
+        else { 
          Write-Warning "There are no App Registrations with Secrets close to Expiry"
          Exit 1
        }
@@ -102,7 +122,7 @@ $ExpiringSecrets | ForEach-Object {
             KeyId = $SecretKeyID
         }
 
-        Try {
+        try {
             Write-Output "Removing Secret: $SecretKeyID from $($SecretToRemove.AppName)"
             Start-Sleep -Seconds 10
 
@@ -113,7 +133,7 @@ $ExpiringSecrets | ForEach-Object {
             }
             Remove-MgApplicationPassword @SecretRemovalArgs 
         } 
-        Catch {
+        catch {
             Write-Output "Failed to remove secret $($Error[0].Exception.Message)"
         }
     }
@@ -134,7 +154,7 @@ $TrimmedOldSecret = [System.Text.RegularExpressions.Regex]::Replace($SecretName,
       }
   }
 
-   Try {
+   try {
     [hashtable]$SecretRenewalArgs = @{
          ApplicationId = $SecretToRenew.AppID
          BodyParameter = $RenewSecretParams
@@ -144,7 +164,7 @@ $TrimmedOldSecret = [System.Text.RegularExpressions.Regex]::Replace($SecretName,
       $Result = Add-MgApplicationPassword @SecretRenewalArgs
       [void]$RenewedSecretsResultsArray.Add($Result)
     }
-    Catch {
+    catch {
         Write-Output "There was an Error renewing the Secret for $($Expiring.AppName)"
            [PSCustomObject][Ordered]@{
             Failure           = $Error.Exception.Message
@@ -156,7 +176,7 @@ $TrimmedOldSecret = [System.Text.RegularExpressions.Regex]::Replace($SecretName,
     }
 }
 
-    Try {
+    try {
       Connect-AzAccount -Identity | Out-Null
       $RenewedSecretsResultsArray | ForEach-Object {
       $KeyVaultSecret = $_
@@ -178,7 +198,7 @@ $TrimmedOldSecret = [System.Text.RegularExpressions.Regex]::Replace($SecretName,
         Write-Output "Creating Secret $($_.Name) in $($KeyVaultArgs.VaultName)"
         }
     }
-}   Catch {
+}   catch {
         Write-Output "There was an Error renewing the Secret for $($Expiring.AppName)"
            [PSCustomObject][Ordered]@{
              Failure           = $Error.Exception.Message
@@ -222,10 +242,10 @@ $TrimmedOldSecret = [System.Text.RegularExpressions.Regex]::Replace($SecretName,
      $AppOwnerPrimarySMTP = $_.AppOwner
      $Subject             = "Alert: One or More App Registration Secrets are Expiring" 
 
-     Try {
+     try {
            Send-GraphEmail -MailboxSender $MailboxSender -MailboxRecipient $AppOwnerPrimarySMTP -Subject $Subject -EmailBody $EmailBody -UseMSI  
      }
-     Catch {
+     catch {
              Write-Output "$($Error[0].Exception.Message)"
      } 
        }

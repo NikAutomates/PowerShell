@@ -1,3 +1,17 @@
+ <#
+.AUTHOR
+    Nik Chikersal
+.SYNOPSIS
+    This function is used to retrieve an access token (bearer) from Microsoft Graph
+.EXAMPLE
+    Get-GraphAccessToken -UseMSI
+    This example shows how to retrieve an access token using MSI
+
+    Get-GraphAccessToken
+    This example shows how to retrieve an access token without using MSI
+.NOTES
+#>
+
 function Get-GraphAccessToken {
     [CmdletBinding()]
     param (
@@ -7,26 +21,26 @@ function Get-GraphAccessToken {
     )
 
     if ($UseMSI) {
-        Try {
+        try {
             [void](Connect-AzAccount -Identity)
             $ResourceURL = "https://graph.microsoft.com"
             $global:BearerToken = [string](Get-AzAccessToken -ResourceUrl $ResourceURL).Token 
             return $global:BearerToken      
         }
-        Catch {
+        catch {
             Write-Warning $Error.Exception[0]
         }
     }
     Else {
-        Try {
-            If (Get-Command -Name Connect-AzAccount) {
+        try {
+            if (Get-Command -Name Connect-AzAccount) {
                  [void](Connect-AzAccount)
                  $ResourceURL = "https://graph.microsoft.com"
                  $global:BearerToken = [string](Get-AzAccessToken -ResourceUrl $ResourceURL).Token
                  return $global:BearerToken    
             }
         }
-        Catch {
+        catch {
             Write-Warning $Error.Exception[0]
         }
     }

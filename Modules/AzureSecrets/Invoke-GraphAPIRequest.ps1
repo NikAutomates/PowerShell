@@ -5,7 +5,10 @@
     This function is used to make Graph REST API Requests to Microsoft Graph with automatic bearer token retrieval
 .EXAMPLE
     Invoke-GraphAPIRequest -GraphResource 'groups' -UseMSI
+    This example shows how to retrieve a list of resources (Example: Groups) using MSI
+    
     Invoke-GraphAPIRequest -GraphResource 'groups'
+    This example shows how to retrieve a list of resources (Example: Groups) without using MSI
 .NOTES
 Validate set within function is being worked on to include entity sets, rather than just the ones listed below.
 #>
@@ -19,21 +22,21 @@ function Invoke-GraphAPIRequest {
         [switch]$UseMSI  
     )
 
-    If ([string]::IsNullOrEmpty($global:BearerToken)) {
-       If ($UseMSI) {
-         Try {
+    if ([string]::IsNullOrEmpty($global:BearerToken)) {
+       if ($UseMSI) {
+         try {
             $global:BearerToken = Get-GraphAccessToken -UseMSI
          }
-         Catch {
-            Write-Warning $Error.Exception.Message[0]
+         catch {
+            Write-Warning $Global:Error.Exception.Message[0]
         } 
     }
     elseif (!$UseMSI) {
-         Try {
+         try {
             $global:BearerToken = Get-GraphAccessToken
          }
-         Catch {
-            Write-Warning $Error.Exception.Message[0]
+         catch {
+            Write-Warning $Global:Error.Exception.Message[0]
           }
        }
     }
@@ -43,7 +46,7 @@ function Invoke-GraphAPIRequest {
         Uri     = "https://graph.microsoft.com/Beta/$($GraphResource)" 
         Method  = 'GET'
    }
-    Try {
+    try {
          do {
             $GraphResponse = Invoke-RestMethod @SplatArgs 
             foreach ($Response in $GraphResponse.Value) {
@@ -51,45 +54,49 @@ function Invoke-GraphAPIRequest {
             }
             $SplatArgs.Uri = $GraphResponse."@odata.nextLink"
         } while ($SplatArgs.Uri)
-           If (![string]::IsNullOrEmpty($Results)) {
+           if (![string]::IsNullOrEmpty($Results)) {
             return $global:results
         }        
     }
-    Catch {
+    catch {
         [PSCustomObject]@{
-            Exception = $($Error.Exception.Message)[0]
+            CommandException = $($Global:Error.Exception)[0]
         }
-         If ($IsWindows) { 
+         if ($IsWindows) { 
           Start-Sleep -Seconds 3 ; [System.Diagnostics.Process]::Start("C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe","https://learn.microsoft.com/en-us/graph/permissions-reference")
           [PSCustomObject][Ordered]@{
-            Error = $($Error.Exception.Message)[0]
+            Error = $($Global:Error.Exception.Message)[0]
             Msg   = "Please Visit: https://learn.microsoft.com/en-us/graph/permissions-reference"
         }
     }
     elseif ($IsMacOS -or $UseMSI) {
-            Write-Output "Please Visit: https://learn.microsoft.com/en-us/graph/permissions-reference" 
-        }
+        [PSCustomObject][Ordered]@{
+            Error = $($Global:Error.Exception.Message)[0]
+            Msg   = "Please Visit: https://learn.microsoft.com/en-us/graph/permissions-reference"
+        } 
     }
+}
 
+if (!$UseMSI) {
 [string]$PermissionsConsent = Read-Host "Would you like to consent to Graph Permissions? Type 'Y' to consent or 'N' to exit"
   Switch ($PermissionsConsent) {
       'Y' { $SetPermissions = Read-Host "Enter the permissions you would like to consent to. Example: 'User.Read, Group.ReadWrite.All'"
-          If (![string]::IsNullOrEmpty($SetPermissions)) {
+          if (![string]::IsNullOrEmpty($SetPermissions)) {
             Try {
                 $ConsentCheck = Connect-MgGraph -Scopes $SetPermissions -ErrorAction STOP
-                If (($ConsentCheck | Select-String -Pattern "Welcome to Microsoft Graph!")) {
+                if (($ConsentCheck | Select-String -Pattern "Welcome to Microsoft Graph!")) {
                     Write-Host "Permissions have been consented successfully: $($SetPermissions)" -ForegroundColor Green
                 }
             }
-           Catch {
-                If (($Error[0] | Select-String -Pattern "User declined to consent to access the app")) {
+           catch {
+                If (($Global:Error[0] | Select-String -Pattern "User declined to consent to access the app")) {
                 Write-Warning "Permissions were not consented because the prompt was canceled or consent isn't allowed"
              }
-             Elseif (($Error[0] | Select-String -Pattern "that doesn't exist on the resource" )) {
+             elseif (($Global:Error[0] | Select-String -Pattern "that doesn't exist on the resource" )) {
                 Write-Warning "Permissions were not consented because the permissions you entered are not valid"
                 Start-Sleep -Seconds 10; Exit 1
                }
-               ElseIf (($Error[0] | Select-String -Pattern "that doesn't exist on the resource") -or ($Error[0] | 
+               elseIf (($Global:Error[0] | Select-String -Pattern "that doesn't exist on the resource") -or ($Global:Error[0] | 
                  Select-String -Pattern "User declined to consent to access the app" -NotMatch)) {
                  Write-Warning "$($SetPermissions): is not a valid permission. Please visit: https://docs.microsoft.com/en-us/graph/permissions-reference"
                  Start-Sleep -Seconds 10; Exit 1
@@ -99,7 +106,9 @@ function Invoke-GraphAPIRequest {
     }
     'N' { Write-Warning "Exiting..."}
     default {Write-Warning "Exiting..."}}
-    $Error.Clear() }
+    $Global:Error.Clear() 
+   }
+}
 
    
   

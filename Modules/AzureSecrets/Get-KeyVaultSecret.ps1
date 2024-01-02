@@ -21,12 +21,14 @@
 
     Get-KeyvaultSecret -SecretName 'MySecret' -KeyVaultName 'MyAzureVaultName' -DownloadSecret -Filetype xml
     this example shows how to download a secret from a specified vault and save it as an xml file or any other file type from the validate set
+.NOTES
+Ensure you have the proper IAM permissions to the keyvault and secret (s) in question before attempting to download or retrieve them
 #>
 function Get-KeyVaultSecret {
     [CmdletBinding()]
     [Alias('Set-DefaultKeyVault', 'Set-DefaultAzureSubscription')]
     param (
-        [Parameter(Mandatory = $false, Position = 0, ValueFromPipeline = $true)]
+        [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true)]
         [ValidateNotNullOrEmpty()]
         [string]$SecretName,
         [Parameter(Mandatory = $false)]
@@ -49,17 +51,27 @@ function Get-KeyVaultSecret {
         [string]$FileType
     )
 
-If (-not [string]::IsNullOrEmpty($DefaultSubscriptionName)) {
-    If (Get-AzSubscription -SubscriptionName $DefaultSubscriptionName -ErrorAction SilentlyContinue) {
-        Try {
+if (($DefaultKeyVaultName -or $DefaultSubscriptionName) -and ($KeyVaultName -or $SecretName -or $DownloadSecret)) {
+    Write-Warning "Cannot use default vault and subscription parameters with standard vault or secret name parameters"
+    Write-Output "Use the following commands to set default vault and subscription"
+    Write-Output "Set-DefaultKeyVault -DefaultKeyVaultName 'MyVaultName'"
+    Write-Output "Set-DefaultAzureSubscription -DefaultSubscriptionName 'MySubscriptionName'"
+    break
+}
+
+Connect-Azure -CheckIfConnected
+
+if (-not [string]::IsNullOrEmpty($DefaultSubscriptionName)) {
+    if (Get-AzSubscription -SubscriptionName $DefaultSubscriptionName -ErrorAction SilentlyContinue) {
+        try {
             Set-AzConfig -DefaultSubscriptionForLogin $DefaultSubscriptionName
             return   
         }
-        Catch {
-            Write-Warning $($Error.Exception.Message[0])
+        catch {
+            Write-Warning $($Global:Error.Exception.Message[0])
         }
     }
-    Else {
+    else {
          Write-Warning "Could not find Subscription Name $($DefaultSubscriptionName) in Azure"
          Start-Sleep -Seconds 10
          Exit 1
@@ -69,15 +81,15 @@ If (-not [string]::IsNullOrEmpty($DefaultSubscriptionName)) {
 $MacXML = "/Users/$env:USER/Defaults.Xml"
 $WindowsXML = "$env:USERPROFILE\Defaults.Xml"
 
-    If ($DefaultKeyVaultName) { 
-        If ($IsMacOS) {
+    if ($DefaultKeyVaultName) { 
+        if ($IsMacOS) {
             Out-File -InputObject $DefaultKeyVaultName -FilePath $MacXML -Force
-            If (Test-Path $MacXML) {
+            if (Test-Path $MacXML) {
                Write-Host "Default KeyVault has been set to $($DefaultKeyVaultName)" -ForegroundColor Green
             }
             Return
         }
-        Elseif ($IsWindows) {
+        elseif ($IsWindows) {
             Out-File -InputObject $DefaultKeyVaultName -FilePath $WindowsXML -Force
             if (Test-Path $WindowsXML) {
                 Write-Host "Default KeyVault has been set to $($DefaultKeyVaultName)" -ForegroundColor Green
@@ -86,41 +98,41 @@ $WindowsXML = "$env:USERPROFILE\Defaults.Xml"
          }
     }
 
-If ((Test-Path -Path $WindowsXML -ErrorAction SilentlyContinue) -or (Test-Path -Path $MacXML -ErrorAction SilentlyContinue) -and [string]::IsNullOrEmpty($KeyVaultName)) { 
+if ((Test-Path -Path $WindowsXML -ErrorAction SilentlyContinue) -or (Test-Path -Path $MacXML -ErrorAction SilentlyContinue) -and [string]::IsNullOrEmpty($KeyVaultName)) { 
      Switch ($IsMacOS) {
         $true  { $KeyVaultName = [string](Get-Content -Path $MacXML) }
         $false { $KeyVaultName = [string](Get-Content -Path $WindowsXML) }
       }
     }
-    Elseif (-not [string]::IsNullOrEmpty($KeyVaultName)) { $KeyVaultName = $KeyVaultName }
+    elseif (-not [string]::IsNullOrEmpty($KeyVaultName)) { $KeyVaultName = $KeyVaultName }
 
-    If (([string]::IsNullOrEmpty($KeyVaultName))) {
+    if (([string]::IsNullOrEmpty($KeyVaultName))) {
         Write-Warning "No values were specified. Please specify a valid valult name or a set a default vault"
         Write-Output "To Set Default Vault: Set-DefaultKeyVault -SetDefaultKeyVault <VaultName>"
         Write-Output "To specifiy a Vault: Get-KeyVaultSecret -KeyVaultName <VaultName>"
         return
     }
-    Elseif (-not (Get-AzKeyVault -VaultName $KeyVaultName)) {
+    elseif (-not (Get-AzKeyVault -VaultName $KeyVaultName)) {
         Write-Warning "KeyVault: $($KeyVaultName) was not found"
         Write-Output "To Set Default Vault: Set-DefaultKeyVault -SetDefaultKeyVault <VaultName>"
         Write-Output "To Specifiy a Vault: Get-KeyVaultSecret -KeyVaultName <VaultName>"
         return
     }
        $SecretResult = Get-AzKeyVaultSecret -VaultName $KeyVaultName -Name $SecretName -AsPlainText
-          If ([string]::IsNullOrEmpty($SecretResult)) {
+          if ([string]::IsNullOrEmpty($SecretResult)) {
                 Write-Warning "Secret $($SecretName) not found in $($KeyVaultName)"
                 Start-Sleep -Seconds 3
-                Try {
+                try {
                     Get-AzKeyVaultSecret -VaultName $KeyVaultName | Select-Object @{N='ExistingSecrets'; E={$_.Name}}  
                 }
-                Catch {
-                    Write-Warning $($Error.Exception.Message)[0]
+                catch {
+                    Write-Warning $($Global:Error.Exception.Message)[0]
                 }
             }
-            Elseif (-not ([string]::IsNullOrEmpty($SecretResult))) {
-                If ($DownloadSecret) {
-                    Try {
-                        If ($FileType) { $ExportedFile = "$($SecretName).$($FileType)" } Else { $ExportedFile = "$($SecretName).txt" }
+            elseif (-not ([string]::IsNullOrEmpty($SecretResult))) {
+                if ($DownloadSecret) {
+                    try {
+                        if ($FileType) { $ExportedFile = "$($SecretName).$($FileType)" } Else { $ExportedFile = "$($SecretName).txt" }
                         Get-AzKeyVaultSecret -VaultName $KeyVaultName -Name $SecretName -AsPlainText | Out-File $ExportedFile
                         Write-Host "Azure Secret $($ExportedFile) has been downloaded to $([System.IO.Directory]::GetCurrentDirectory())" -ForegroundColor Yellow
             
@@ -147,22 +159,38 @@ If ((Test-Path -Path $WindowsXML -ErrorAction SilentlyContinue) -or (Test-Path -
                                 switch ($Platform) {
                                     'V' {
                                         try {
-                                            Code $ExportedFile
+                                            if ($IsWindows) { 
+                                                Code $ExportedFile 
+                                            } Elseif ($IsMacOS) { 
+                                                Write-Warning "Mac detected: Opening in default app" 
+                                                & ./$ExportedFile 
+                                            }
                                         } catch {
-                                            Write-Warning "VSCode was not detected on $($hostname). Opening file in Notepad..."
+                                            Write-Warning "VSCode was not detected or there was an error that occured on $(hostname). Opening file in Notepad..."
                                             Notepad $ExportedFile
                                         }
                                     }
-                                    'N' { Notepad $ExportedFile }
+                                    'N' { 
+                                        try {
+                                            if ($IsWindows) { 
+                                                NotePad $ExportedFile 
+                                        } Elseif ($IsMacOS) { 
+                                            Write-Warning "Mac detected: Opening in default app" 
+                                            & ./$ExportedFile 
+                                        }
+                                    } catch {
+                                        Write-Warning "Notepad was not detected or there was an error that occured on $(hostname)"
+                                      } 
+                                   }
                                 }
                             }
                         }
                     }
-                    Catch {
-                        Write-Warning $($Error.Exception.Message)[0]
+                    catch {
+                        Write-Warning $($Global:Error.Exception.Message)[0]
                     }
                 }
-                Else {
+                else {
                     Return $SecretResult
                 }
             }
