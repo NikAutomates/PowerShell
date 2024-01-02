@@ -7,7 +7,7 @@
     Set-DefaultKeyVault -DefaultKeyVaultName 'MyAzureVaultName'
     This example shows how to set the default vault 
 
-    Set-DefaultAzureSubscription -DefaultSubscriptionName 'MyAzureSubscriptionName'
+    Set-DefaultAzureSubscription -SubscriptionName 'MyAzureSubscriptionName'
     This example shows how to set the default subscription
 
     Get-KeyvaultSecret -SecretName 'MySecret' -DownloadSecret
@@ -28,7 +28,7 @@ function Get-KeyVaultSecret {
     [CmdletBinding()]
     [Alias('Set-DefaultKeyVault', 'Set-DefaultAzureSubscription')]
     param (
-        [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true)]
+        [Parameter(Mandatory = $false, Position = 0, ValueFromPipeline = $true)]
         [ValidateNotNullOrEmpty()]
         [string]$SecretName,
         [Parameter(Mandatory = $false)]
@@ -38,7 +38,7 @@ function Get-KeyVaultSecret {
         [ValidateNotNullOrEmpty()]
         [string]$DefaultKeyVaultName,
         [ValidateNotNullOrEmpty()]
-        [string]$DefaultSubscriptionName,
+        [string]$SubscriptionName,
         [Parameter(Mandatory = $false)]
         [ValidateNotNullOrEmpty()]
         [switch]$DownloadSecret,
@@ -51,20 +51,18 @@ function Get-KeyVaultSecret {
         [string]$FileType
     )
 
-if (($DefaultKeyVaultName -or $DefaultSubscriptionName) -and ($KeyVaultName -or $SecretName -or $DownloadSecret)) {
+if (($DefaultKeyVaultName -or $SubscriptionName) -and ($KeyVaultName -or $SecretName -or $DownloadSecret)) {
     Write-Warning "Cannot use default vault and subscription parameters with standard vault or secret name parameters"
     Write-Output "Use the following commands to set default vault and subscription"
     Write-Output "Set-DefaultKeyVault -DefaultKeyVaultName 'MyVaultName'"
-    Write-Output "Set-DefaultAzureSubscription -DefaultSubscriptionName 'MySubscriptionName'"
+    Write-Output "Set-DefaultAzureSubscription -SubscriptionName 'MySubscriptionName'"
     break
 }
 
-Connect-Azure -CheckIfConnected
-
-if (-not [string]::IsNullOrEmpty($DefaultSubscriptionName)) {
-    if (Get-AzSubscription -SubscriptionName $DefaultSubscriptionName -ErrorAction SilentlyContinue) {
+if (-not [string]::IsNullOrEmpty($SubscriptionName)) {
+    if (Get-AzSubscription -SubscriptionName $SubscriptionName -ErrorAction SilentlyContinue) {
         try {
-            Set-AzConfig -DefaultSubscriptionForLogin $DefaultSubscriptionName
+            Set-AzConfig -DefaultSubscriptionForLogin $SubscriptionName
             return   
         }
         catch {
@@ -72,7 +70,7 @@ if (-not [string]::IsNullOrEmpty($DefaultSubscriptionName)) {
         }
     }
     else {
-         Write-Warning "Could not find Subscription Name $($DefaultSubscriptionName) in Azure"
+         Write-Warning "Could not find Subscription Name $($SubscriptionName) in Azure"
          Start-Sleep -Seconds 10
          Exit 1
        }
