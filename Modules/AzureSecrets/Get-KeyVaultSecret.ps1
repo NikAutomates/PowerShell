@@ -52,10 +52,15 @@ function Get-KeyVaultSecret {
     )
 
 if (($DefaultKeyVaultName -or $SubscriptionName) -and ($KeyVaultName -or $SecretName -or $DownloadSecret)) {
-    Write-Warning "Cannot use default vault and subscription parameters with standard vault or secret name parameters"
+    Write-Error "Cannot use -DefaultKeyVaultName or -SubscriptionName Parameters with other other Parameters"
     Write-Output "Use the following commands to set default vault and subscription"
     Write-Output "Set-DefaultKeyVault -DefaultKeyVaultName 'MyVaultName'"
     Write-Output "Set-DefaultAzureSubscription -SubscriptionName 'MySubscriptionName'"
+    break
+}
+
+if (($DownloadSecret -or $FileType) -and (-not $DownloadSecret -or -not $FileType)) {
+    Write-Error "If -DownloadSecret or -FileType are used, both parameters must be used together"
     break
 }
 
